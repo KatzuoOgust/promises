@@ -97,7 +97,8 @@ public class PromiseTests
 		var promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, 99);
 
-		var result = await PromiseWait.WaitAsync(promise, TimeSpan.FromMilliseconds(10));
+		var settled = await promise.WaitAsync();
+		var result = await settled.GetResultAsync();
 
 		Assert.Equal(99, result);
 	}
@@ -114,7 +115,8 @@ public class PromiseTests
 			await _store.ResolveAsync(promise.Id, 77);
 		});
 
-		var result = await PromiseWait.WaitAsync(promise, TimeSpan.FromMilliseconds(20));
+		var settled = await promise.WaitAsync();
+		var result = await settled.GetResultAsync();
 
 		Assert.Equal(77, result);
 	}
@@ -131,7 +133,7 @@ public class PromiseTests
 		});
 
 		await Assert.ThrowsAsync<PromiseFailedException>(
-			() => PromiseWait.WaitAsync(promise, TimeSpan.FromMilliseconds(20)));
+			() => promise.WaitAsync());
 	}
 
 	[Fact]
@@ -140,16 +142,16 @@ public class PromiseTests
 		var promise = await _store.CreateAsync(); // stays pending
 
 		await Assert.ThrowsAsync<TimeoutException>(
-			() => PromiseWait.WaitAsync(promise, TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(100)));
+			() => promise.WaitAsync(TimeSpan.FromMilliseconds(150)));
 	}
 
 	[Fact]
 	public async Task WaitAsync_CancellationRequested_ThrowsOperationCanceledException()
 	{
 		var promise = await _store.CreateAsync(); // stays pending
-		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
 
 		await Assert.ThrowsAnyAsync<OperationCanceledException>(
-			() => PromiseWait.WaitAsync(promise, TimeSpan.FromMilliseconds(20), cts.Token));
+			() => promise.WaitAsync(ct: cts.Token));
 	}
 }
