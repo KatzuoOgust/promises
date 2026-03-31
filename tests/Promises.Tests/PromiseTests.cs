@@ -154,4 +154,29 @@ public class PromiseTests
 		await Assert.ThrowsAnyAsync<OperationCanceledException>(
 			() => promise.WaitAsync(ct: cts.Token));
 	}
+
+	[Fact]
+	public async Task WaitForResultAsync_ResolvesAfterDelay_ReturnsResult()
+	{
+		var promise = await _store.CreateAsync();
+
+		_ = Task.Run(async () =>
+		{
+			await Task.Delay(80);
+			await _store.ResolveAsync(promise.Id, 42);
+		});
+
+		var result = await promise.WaitForResultAsync();
+
+		Assert.Equal(42, result);
+	}
+
+	[Fact]
+	public async Task WaitForResultAsync_Timeout_ThrowsTimeoutException()
+	{
+		var promise = await _store.CreateAsync(); // stays pending
+
+		await Assert.ThrowsAsync<TimeoutException>(
+			() => promise.WaitForResultAsync(TimeSpan.FromMilliseconds(150)));
+	}
 }

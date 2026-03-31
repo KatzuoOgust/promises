@@ -25,6 +25,23 @@ public static class PromiseExtensions
 		return WaitCoreAsync(promise, timeout, ct);
 	}
 
+	/// <summary>
+	/// Polls the store with increasing intervals (from 50 ms up to 2 s) until the promise
+	/// settles, then returns the resolved result directly.
+	/// Throws <see cref="PromiseFailedException"/> when the promise failed,
+	/// <see cref="PromiseNotFoundException"/> if the id disappears,
+	/// <see cref="TimeoutException"/> after <paramref name="timeout"/> (when provided),
+	/// or <see cref="OperationCanceledException"/> when <paramref name="ct"/> fires.
+	/// </summary>
+	public static async Task<T> WaitForResultAsync<T>(
+		this Promise<T> promise,
+		TimeSpan? timeout = null,
+		CancellationToken ct = default)
+	{
+		var settled = await promise.WaitAsync(timeout, ct).ConfigureAwait(false);
+		return await settled.GetResultAsync(ct).ConfigureAwait(false);
+	}
+
 	private static async Task<Promise<T>> WaitCoreAsync<T>(
 		Promise<T> promise,
 		TimeSpan? timeout,
