@@ -13,7 +13,7 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 
 	public Task<Promise<T>> CreateAsync(CancellationToken ct = default)
 	{
-		var id = Guid.NewGuid().ToString("N");
+		string id = Guid.NewGuid().ToString("N");
 		var record = new PromiseRecord<T>(id, PromiseStatus.Pending, default, null, DateTimeOffset.UtcNow, null);
 		_store[id] = record;
 		return Task.FromResult(new Promise<T>(id, this));
@@ -43,7 +43,7 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 
 	public Task<PromiseRecord<T>?> GetAsync(string id, CancellationToken ct = default)
 	{
-		_store.TryGetValue(id, out var record);
+		_store.TryGetValue(id, out PromiseRecord<T>? record);
 		return Task.FromResult(record);
 	}
 
@@ -51,13 +51,13 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 	{
 		while (true)
 		{
-			if (!_store.TryGetValue(id, out var existing))
+			if (!_store.TryGetValue(id, out PromiseRecord<T>? existing))
 				throw new PromiseNotFoundException(id);
 
 			if (existing.Status != PromiseStatus.Pending)
 				throw new InvalidOperationException($"Promise '{id}' is already settled ({existing.Status}).");
 
-			var updated = updater(existing);
+			PromiseRecord<T> updated = updater(existing);
 			if (_store.TryUpdate(id, updated, existing))
 				return;
 			// Another thread beat us; retry with the fresh value.

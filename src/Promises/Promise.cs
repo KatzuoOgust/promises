@@ -7,17 +7,15 @@ namespace KatzuoOgust.Promises;
 /// </summary>
 public sealed class Promise<T>
 {
-	private readonly IPromiseStore<T> _store;
-
 	public string Id { get; }
-	internal IPromiseStore<T> Store => _store;
+	internal IPromiseStore<T> Store { get; }
 
 	public Promise(string id, IPromiseStore<T> store)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(id);
 		ArgumentNullException.ThrowIfNull(store);
 		Id = id;
-		_store = store;
+		Store = store;
 	}
 
 	/// <summary>
@@ -26,7 +24,7 @@ public sealed class Promise<T>
 	/// </summary>
 	public async Task<PromiseRecord<T>> CheckAsync(CancellationToken ct = default)
 	{
-		var record = await _store.GetAsync(Id, ct).ConfigureAwait(false);
+		PromiseRecord<T>? record = await Store.GetAsync(Id, ct).ConfigureAwait(false);
 		return record ?? throw new PromiseNotFoundException(Id);
 	}
 
@@ -37,7 +35,7 @@ public sealed class Promise<T>
 	/// </summary>
 	public async Task<T> GetResultAsync(CancellationToken ct = default)
 	{
-		var record = await CheckAsync(ct).ConfigureAwait(false);
+		PromiseRecord<T> record = await CheckAsync(ct).ConfigureAwait(false);
 
 		return record.Status switch
 		{

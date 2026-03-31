@@ -8,38 +8,37 @@ public static class PromiseExtensions
 	private static readonly TimeSpan MinInterval = TimeSpan.FromMilliseconds(50);
 	private static readonly TimeSpan MaxInterval = TimeSpan.FromSeconds(2);
 
-	/// <summary>
-	/// Polls the store with increasing intervals (from 50 ms up to 2 s) until the promise
-	/// settles, then returns the promise handle.
-	/// Throws <see cref="PromiseFailedException"/> when the promise failed,
-	/// <see cref="PromiseNotFoundException"/> if the id disappears,
-	/// <see cref="TimeoutException"/> after <paramref name="timeout"/> (when provided),
-	/// or <see cref="OperationCanceledException"/> when <paramref name="ct"/> fires.
-	/// </summary>
-	public static Task<Promise<T>> WaitAsync<T>(
-		this Promise<T> promise,
-		TimeSpan? timeout = null,
-		CancellationToken ct = default)
+	extension<T>(Promise<T> promise)
 	{
-		ArgumentNullException.ThrowIfNull(promise);
-		return WaitCoreAsync(promise, timeout, ct);
-	}
+		/// <summary>
+		/// Polls the store with increasing intervals (from 50 ms up to 2 s) until the promise
+		/// settles, then returns the promise handle.
+		/// Throws <see cref="PromiseFailedException"/> when the promise failed,
+		/// <see cref="PromiseNotFoundException"/> if the id disappears,
+		/// <see cref="TimeoutException"/> after <paramref name="timeout"/> (when provided),
+		/// or <see cref="OperationCanceledException"/> when <paramref name="ct"/> fires.
+		/// </summary>
+		public Task<Promise<T>> WaitAsync(TimeSpan? timeout = null,
+			CancellationToken ct = default)
+		{
+			ArgumentNullException.ThrowIfNull(promise);
+			return WaitCoreAsync(promise, timeout, ct);
+		}
 
-	/// <summary>
-	/// Polls the store with increasing intervals (from 50 ms up to 2 s) until the promise
-	/// settles, then returns the resolved result directly.
-	/// Throws <see cref="PromiseFailedException"/> when the promise failed,
-	/// <see cref="PromiseNotFoundException"/> if the id disappears,
-	/// <see cref="TimeoutException"/> after <paramref name="timeout"/> (when provided),
-	/// or <see cref="OperationCanceledException"/> when <paramref name="ct"/> fires.
-	/// </summary>
-	public static async Task<T> WaitForResultAsync<T>(
-		this Promise<T> promise,
-		TimeSpan? timeout = null,
-		CancellationToken ct = default)
-	{
-		var settled = await promise.WaitAsync(timeout, ct).ConfigureAwait(false);
-		return await settled.GetResultAsync(ct).ConfigureAwait(false);
+		/// <summary>
+		/// Polls the store with increasing intervals (from 50 ms up to 2 s) until the promise
+		/// settles, then returns the resolved result directly.
+		/// Throws <see cref="PromiseFailedException"/> when the promise failed,
+		/// <see cref="PromiseNotFoundException"/> if the id disappears,
+		/// <see cref="TimeoutException"/> after <paramref name="timeout"/> (when provided),
+		/// or <see cref="OperationCanceledException"/> when <paramref name="ct"/> fires.
+		/// </summary>
+		public async Task<T> WaitForResultAsync(TimeSpan? timeout = null,
+			CancellationToken ct = default)
+		{
+			Promise<T> settled = await promise.WaitAsync(timeout, ct).ConfigureAwait(false);
+			return await settled.GetResultAsync(ct).ConfigureAwait(false);
+		}
 	}
 
 	private static async Task<Promise<T>> WaitCoreAsync<T>(
@@ -47,21 +46,21 @@ public static class PromiseExtensions
 		TimeSpan? timeout,
 		CancellationToken ct)
 	{
-		using var timeoutCts = timeout.HasValue
+		using CancellationTokenSource? timeoutCts = timeout.HasValue
 			? new CancellationTokenSource(timeout.Value)
 			: null;
 
-		using var linkedCts = timeoutCts is not null
+		using CancellationTokenSource? linkedCts = timeoutCts is not null
 			? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token)
 			: null;
 
-		var effectiveCt = linkedCts?.Token ?? ct;
-		var interval = MinInterval;
+		CancellationToken effectiveCt = linkedCts?.Token ?? ct;
+		TimeSpan interval = MinInterval;
 
 		while (true)
 		{
-			var record = await promise.Store.GetAsync(promise.Id, effectiveCt).ConfigureAwait(false)
-				?? throw new PromiseNotFoundException(promise.Id);
+			PromiseRecord<T> record = await promise.Store.GetAsync(promise.Id, effectiveCt).ConfigureAwait(false)
+			                          ?? throw new PromiseNotFoundException(promise.Id);
 
 			switch (record.Status)
 			{

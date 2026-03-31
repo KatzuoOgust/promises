@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>KatzuoOgust.Promises.FileSystem</AssemblyName>
     <RootNamespace>KatzuoOgust.Promises.FileSystem</RootNamespace>
+    <PackageId>KatzuoOgust.Promises.FileSystem</PackageId>
+    <Title>KatzuoOgust.Promises.FileSystem</Title>
+    <Description>File system store implementation for KatzuoOgust.Promises. Stores one JSON file per promise.</Description>
+    <PackageTags>promise;async;file-system;store;json</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Promises\Promises.csproj" />

@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>KatzuoOgust.Promises.InMemory</AssemblyName>
     <RootNamespace>KatzuoOgust.Promises.InMemory</RootNamespace>
+    <PackageId>KatzuoOgust.Promises.InMemory</PackageId>
+    <Title>KatzuoOgust.Promises.InMemory</Title>
+    <Description>Thread-safe, in-memory store implementation for KatzuoOgust.Promises.</Description>
+    <PackageTags>promise;async;in-memory;store</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Promises\Promises.csproj" />

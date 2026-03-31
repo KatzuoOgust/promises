@@ -20,9 +20,9 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task Create_WritesJsonFile()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 
-		var files = System.IO.Directory.GetFiles(_dir, "*.json");
+		string[] files = System.IO.Directory.GetFiles(_dir, "*.json");
 		Assert.Single(files);
 		Assert.Contains(promise.Id, files[0]);
 	}
@@ -30,8 +30,8 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task Create_ReturnsPendingPromise()
 	{
-		var promise = await _store.CreateAsync();
-		var record = await promise.CheckAsync();
+		Promise<string> promise = await _store.CreateAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Pending, record.Status);
 		Assert.Null(record.Result);
@@ -40,10 +40,10 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task Resolve_SetsResolvedStatusAndResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "world");
 
-		var record = await promise.CheckAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Resolved, record.Status);
 		Assert.Equal("world", record.Result);
@@ -52,10 +52,10 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task Fail_SetsFailedStatusAndError()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.FailAsync(promise.Id, "crash");
 
-		var record = await promise.CheckAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Failed, record.Status);
 		Assert.Equal("crash", record.ErrorMessage);
@@ -64,7 +64,7 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task GetAsync_UnknownId_ReturnsNull()
 	{
-		var result = await _store.GetAsync("missing");
+		PromiseRecord<string>? result = await _store.GetAsync("missing");
 		Assert.Null(result);
 	}
 
@@ -78,7 +78,7 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task ResolveAsync_AlreadyResolved_ThrowsInvalidOperation()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "first");
 
 		await Assert.ThrowsAsync<InvalidOperationException>(
@@ -88,7 +88,7 @@ public class FileSystemPromiseStoreTests : IDisposable
 	[Fact]
 	public async Task FailAsync_AlreadyResolved_ThrowsInvalidOperation()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "value");
 
 		await Assert.ThrowsAsync<InvalidOperationException>(

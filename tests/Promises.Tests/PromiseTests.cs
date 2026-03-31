@@ -11,10 +11,10 @@ public class PromiseTests
 	[Fact]
 	public async Task GetResultAsync_WhenResolved_ReturnsResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, 42);
 
-		var result = await promise.GetResultAsync();
+		int result = await promise.GetResultAsync();
 
 		Assert.Equal(42, result);
 	}
@@ -22,7 +22,7 @@ public class PromiseTests
 	[Fact]
 	public async Task GetResultAsync_WhenPending_ThrowsPromiseNotResolvedException()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 
 		await Assert.ThrowsAsync<PromiseNotResolvedException>(
 			() => promise.GetResultAsync());
@@ -31,10 +31,10 @@ public class PromiseTests
 	[Fact]
 	public async Task GetResultAsync_WhenFailed_ThrowsPromiseFailedException()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 		await _store.FailAsync(promise.Id, "task exploded");
 
-		var ex = await Assert.ThrowsAsync<PromiseFailedException>(
+		PromiseFailedException ex = await Assert.ThrowsAsync<PromiseFailedException>(
 			() => promise.GetResultAsync());
 
 		Assert.Contains("task exploded", ex.Message);
@@ -43,14 +43,14 @@ public class PromiseTests
 	[Fact]
 	public async Task CheckAsync_ReturnsLatestRecord_OnEachCall()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 
-		var first = await promise.CheckAsync();
+		PromiseRecord<int> first = await promise.CheckAsync();
 		Assert.Equal(PromiseStatus.Pending, first.Status);
 
 		await _store.ResolveAsync(promise.Id, 7);
 
-		var second = await promise.CheckAsync();
+		PromiseRecord<int> second = await promise.CheckAsync();
 		Assert.Equal(PromiseStatus.Resolved, second.Status);
 		Assert.Equal(7, second.Result);
 	}
@@ -94,11 +94,11 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitAsync_ResolvesBeforePolling_ReturnsResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, 99);
 
-		var settled = await promise.WaitAsync();
-		var result = await settled.GetResultAsync();
+		Promise<int> settled = await promise.WaitAsync();
+		int result = await settled.GetResultAsync();
 
 		Assert.Equal(99, result);
 	}
@@ -106,7 +106,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitAsync_ResolvesAfterDelay_ReturnsResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 
 		// Resolve after a short delay on a background task
 		_ = Task.Run(async () =>
@@ -115,8 +115,8 @@ public class PromiseTests
 			await _store.ResolveAsync(promise.Id, 77);
 		});
 
-		var settled = await promise.WaitAsync();
-		var result = await settled.GetResultAsync();
+		Promise<int> settled = await promise.WaitAsync();
+		int result = await settled.GetResultAsync();
 
 		Assert.Equal(77, result);
 	}
@@ -124,7 +124,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitAsync_FailsAfterDelay_ThrowsPromiseFailedException()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 
 		_ = Task.Run(async () =>
 		{
@@ -139,7 +139,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitAsync_Timeout_ThrowsTimeoutException()
 	{
-		var promise = await _store.CreateAsync(); // stays pending
+		Promise<int> promise = await _store.CreateAsync(); // stays pending
 
 		await Assert.ThrowsAsync<TimeoutException>(
 			() => promise.WaitAsync(TimeSpan.FromMilliseconds(150)));
@@ -148,7 +148,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitAsync_CancellationRequested_ThrowsOperationCanceledException()
 	{
-		var promise = await _store.CreateAsync(); // stays pending
+		Promise<int> promise = await _store.CreateAsync(); // stays pending
 		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
 
 		await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -158,7 +158,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitForResultAsync_ResolvesAfterDelay_ReturnsResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<int> promise = await _store.CreateAsync();
 
 		_ = Task.Run(async () =>
 		{
@@ -166,7 +166,7 @@ public class PromiseTests
 			await _store.ResolveAsync(promise.Id, 42);
 		});
 
-		var result = await promise.WaitForResultAsync();
+		int result = await promise.WaitForResultAsync();
 
 		Assert.Equal(42, result);
 	}
@@ -174,7 +174,7 @@ public class PromiseTests
 	[Fact]
 	public async Task WaitForResultAsync_Timeout_ThrowsTimeoutException()
 	{
-		var promise = await _store.CreateAsync(); // stays pending
+		Promise<int> promise = await _store.CreateAsync(); // stays pending
 
 		await Assert.ThrowsAsync<TimeoutException>(
 			() => promise.WaitForResultAsync(TimeSpan.FromMilliseconds(150)));

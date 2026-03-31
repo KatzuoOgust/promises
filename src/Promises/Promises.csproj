@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>KatzuoOgust.Promises</AssemblyName>
     <RootNamespace>KatzuoOgust.Promises</RootNamespace>
+    <PackageId>KatzuoOgust.Promises</PackageId>
+    <Title>KatzuoOgust.Promises</Title>
+    <Description>Tiny .NET 10 library for tracking distributed and background task results through a promise abstraction.</Description>
+    <PackageTags>promise;async;distributed;background-tasks</PackageTags>
   </PropertyGroup>
 </Project>

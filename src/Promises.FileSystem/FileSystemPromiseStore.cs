@@ -32,7 +32,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 
 	public async Task<Promise<T>> CreateAsync(CancellationToken ct = default)
 	{
-		var id = Guid.NewGuid().ToString("N");
+		string id = Guid.NewGuid().ToString("N");
 		var record = new PromiseRecord<T>(id, PromiseStatus.Pending, default, null, DateTimeOffset.UtcNow, null);
 		await WriteLockedAsync(id, record, ct).ConfigureAwait(false);
 		return new Promise<T>(id, this);
@@ -56,7 +56,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 
 	public async Task<PromiseRecord<T>?> GetAsync(string id, CancellationToken ct = default)
 	{
-		var path = SafeFilePath(id);
+		string path = SafeFilePath(id);
 		try
 		{
 			// FileShare.Read allows concurrent reads; FileShare.None on the write side
@@ -72,14 +72,15 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		}
 	}
 
-	private async Task UpdateLockedAsync(string id, Func<PromiseRecord<T>, PromiseRecord<T>> updater, CancellationToken ct)
+	private async Task UpdateLockedAsync(string id, Func<PromiseRecord<T>, PromiseRecord<T>> updater,
+		CancellationToken ct)
 	{
-		var sem = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
+		SemaphoreSlim sem = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
 		await sem.WaitAsync(ct).ConfigureAwait(false);
 		try
 		{
-			var existing = await GetAsync(id, ct).ConfigureAwait(false)
-				?? throw new PromiseNotFoundException(id);
+			PromiseRecord<T> existing = await GetAsync(id, ct).ConfigureAwait(false)
+			                            ?? throw new PromiseNotFoundException(id);
 
 			if (existing.Status != PromiseStatus.Pending)
 				throw new InvalidOperationException($"Promise '{id}' is already settled ({existing.Status}).");
@@ -94,7 +95,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 
 	private async Task WriteLockedAsync(string id, PromiseRecord<T> record, CancellationToken ct)
 	{
-		var path = SafeFilePath(id);
+		string path = SafeFilePath(id);
 		// FileShare.None prevents readers from opening a partially-written file.
 		await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None,
 			bufferSize: 4096, useAsync: true);
@@ -107,7 +108,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	/// </summary>
 	private string SafeFilePath(string id)
 	{
-		var path = Path.GetFullPath(Path.Combine(Directory, $"{id}.json"));
+		string path = Path.GetFullPath(Path.Combine(Directory, $"{id}.json"));
 		if (!path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)
 			&& path != Directory)
 		{

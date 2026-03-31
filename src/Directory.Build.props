@@ -1,0 +1,26 @@
+<Project>
+  <!-- Import root directory.build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Emit a .snupkg (portable PDB symbols) alongside every .nupkg. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Shared NuGet metadata — PackageId and Description are set per-project. -->
+    <Company>KatzuoOgust</Company>
+    <Authors>KatzuoOgust</Authors>
+    <License>MIT</License>
+    <PackageProjectUrl>https://github.com/KatzuoOgust/Promises</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/KatzuoOgust/Promises</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <!-- Bump before tagging a release. The publish workflow overrides this with
+         the git tag version: dotnet pack -p:Version=x.y.z -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+  </PropertyGroup>
+</Project>

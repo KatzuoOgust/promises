@@ -1,0 +1,10 @@
+<Project>
+  <!-- Import root directory.build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- Test project overrides -->
+  <PropertyGroup>
+    <!-- Don't pack test projects -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

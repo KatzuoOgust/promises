@@ -11,8 +11,8 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task Create_ReturnsPendingPromise()
 	{
-		var promise = await _store.CreateAsync();
-		var record = await promise.CheckAsync();
+		Promise<string> promise = await _store.CreateAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Pending, record.Status);
 		Assert.Null(record.Result);
@@ -23,10 +23,10 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task Resolve_SetsResolvedStatusAndResult()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "hello");
 
-		var record = await promise.CheckAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Resolved, record.Status);
 		Assert.Equal("hello", record.Result);
@@ -36,10 +36,10 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task Fail_SetsFailedStatusAndError()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.FailAsync(promise.Id, "boom");
 
-		var record = await promise.CheckAsync();
+		PromiseRecord<string> record = await promise.CheckAsync();
 
 		Assert.Equal(PromiseStatus.Failed, record.Status);
 		Assert.Equal("boom", record.ErrorMessage);
@@ -49,7 +49,7 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task GetAsync_UnknownId_ReturnsNull()
 	{
-		var result = await _store.GetAsync("does-not-exist");
+		PromiseRecord<string>? result = await _store.GetAsync("does-not-exist");
 		Assert.Null(result);
 	}
 
@@ -63,7 +63,7 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task ResolveAsync_AlreadyResolved_ThrowsInvalidOperation()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "first");
 
 		await Assert.ThrowsAsync<InvalidOperationException>(
@@ -73,7 +73,7 @@ public class InMemoryPromiseStoreTests
 	[Fact]
 	public async Task FailAsync_AlreadyResolved_ThrowsInvalidOperation()
 	{
-		var promise = await _store.CreateAsync();
+		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "value");
 
 		await Assert.ThrowsAsync<InvalidOperationException>(
