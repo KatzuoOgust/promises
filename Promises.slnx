@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Promises.FileSystem/Promises.FileSystem.csproj" />
+    <Project Path="src/Promises.InMemory/Promises.InMemory.csproj" />
+    <Project Path="src/Promises/Promises.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Promises.Tests/Promises.Tests.csproj" />
+  </Folder>
+</Solution>
