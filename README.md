@@ -1,5 +1,7 @@
 # KatzuoOgust.Promises
 
+<img src="icon.png" alt="Promises Logo" width="128" height="128" />
+
 Tiny .NET 10 library for tracking distributed and background task results through a **promise** abstraction.
 
 A promise is created when a task is dispatched. The worker resolves or fails it later. The caller checks the result **on demand** — each call re-queries the store with no hidden polling.
