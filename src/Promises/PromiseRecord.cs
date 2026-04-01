@@ -6,14 +6,19 @@ public sealed record PromiseRecord<T>
 {
 	/// <summary>Unique identifier for the promise.</summary>
 	public string Id { get; init; }
+
 	/// <summary>Current status of the promise (pending, resolved, or failed).</summary>
 	public PromiseStatus Status { get; init; }
+
 	/// <summary>The resolved result, if the promise has resolved.</summary>
 	public T? Result { get; init; }
+
 	/// <summary>The error message, if the promise has failed.</summary>
 	public string? ErrorMessage { get; init; }
+
 	/// <summary>When the promise was created (UTC).</summary>
 	public DateTimeOffset CreatedAt { get; init; }
+
 	/// <summary>When the promise settled (resolved or failed), if applicable.</summary>
 	public DateTimeOffset? CompletedAt { get; init; }
 
