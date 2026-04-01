@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using KatzuoOgust.Promises;
 
 namespace KatzuoOgust.Promises.FileSystem;
 
@@ -91,10 +90,10 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		try
 		{
 			PromiseRecord<T> existing = await GetAsync(id, ct).ConfigureAwait(false)
-										?? throw new PromiseNotFoundException(id);
+										?? throw Error.NotFound(id);
 
 			if (existing.Status != PromiseStatus.Pending)
-				throw new InvalidOperationException($"Promise '{id}' is already settled ({existing.Status}).");
+				throw Error.AlreadySettled(id, existing.Status);
 
 			await WriteLockedAsync(id, updater(existing), ct).ConfigureAwait(false);
 		}
@@ -126,10 +125,19 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		if (!path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)
 			&& path != Directory)
 		{
-			throw new ArgumentException($"Promise id '{id}' resolves outside the store directory.", nameof(id));
+			throw Error.InvalidId(id, nameof(id));
 		}
 		return path;
 	}
+
+	private static class Error
+	{
+		public static PromiseNotFoundException NotFound(string id) => new(id);
+
+		public static InvalidOperationException AlreadySettled(string id, PromiseStatus status)
+			=> new($"Promise '{id}' is already settled ({status}).");
+
+		public static ArgumentException InvalidId(string id, string paramName)
+			=> new($"Promise id '{id}' resolves outside the store directory.", paramName);
+	}
 }
-
-

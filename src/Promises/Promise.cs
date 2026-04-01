@@ -38,7 +38,7 @@ public sealed class Promise<T>
 	public async Task<PromiseRecord<T>> CheckAsync(CancellationToken ct = default)
 	{
 		PromiseRecord<T>? record = await _store.GetAsync(Id, ct).ConfigureAwait(false);
-		return record ?? throw new PromiseNotFoundException(Id);
+		return record ?? throw Error.NotFound(Id);
 	}
 
 	/// <summary>
@@ -58,8 +58,17 @@ public sealed class Promise<T>
 		return record.Status switch
 		{
 			PromiseStatus.Resolved => record.Result!,
-			PromiseStatus.Failed => throw new PromiseFailedException(Id, record.ErrorMessage),
-			_ => throw new PromiseNotResolvedException(Id)
+			PromiseStatus.Failed => throw Error.Failed(Id, record.ErrorMessage),
+			_ => throw Error.NotResolved(Id)
 		};
+	}
+
+	private static class Error
+	{
+		public static PromiseNotFoundException NotFound(string id) => new(id);
+
+		public static PromiseFailedException Failed(string id, string? errorMessage) => new(id, errorMessage);
+
+		public static PromiseNotResolvedException NotResolved(string id) => new(id);
 	}
 }

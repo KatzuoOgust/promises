@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using KatzuoOgust.Promises;
 
 namespace KatzuoOgust.Promises.InMemory;
 
@@ -57,15 +56,23 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 		while (true)
 		{
 			if (!_store.TryGetValue(id, out PromiseRecord<T>? existing))
-				throw new PromiseNotFoundException(id);
+				throw Error.NotFound(id);
 
 			if (existing.Status != PromiseStatus.Pending)
-				throw new InvalidOperationException($"Promise '{id}' is already settled ({existing.Status}).");
+				throw Error.AlreadySettled(id, existing.Status);
 
 			PromiseRecord<T> updated = updater(existing);
 			if (_store.TryUpdate(id, updated, existing))
 				return;
 			// Another thread beat us; retry with the fresh value.
 		}
+	}
+
+	private static class Error
+	{
+		public static PromiseNotFoundException NotFound(string id) => new(id);
+
+		public static InvalidOperationException AlreadySettled(string id, PromiseStatus status)
+			=> new($"Promise '{id}' is already settled ({status}).");
 	}
 }
