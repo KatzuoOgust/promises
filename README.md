@@ -1,5 +1,10 @@
 # KatzuoOgust.Promises
 
+[![CI](https://github.com/KatzuoOgust/promises/actions/workflows/ci.yml/badge.svg)](https://github.com/KatzuoOgust/promises/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/KatzuoOgust/promises/actions/workflows/codeql.yml/badge.svg)](https://github.com/KatzuoOgust/promises/actions/workflows/codeql.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 <img src="icon.png" alt="Promises Logo" width="128" height="128" />
 
 Tiny .NET 10 library for tracking distributed and background task results through a **promise** abstraction.
