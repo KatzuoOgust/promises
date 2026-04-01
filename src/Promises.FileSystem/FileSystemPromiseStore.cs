@@ -73,7 +73,8 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 			// ensures readers see a complete file.
 			await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
 				bufferSize: 4096, useAsync: true);
-			return await JsonSerializer.DeserializeAsync<PromiseRecord<T>>(stream, s_jsonOptions, ct)
+			return await JsonSerializer
+				.DeserializeAsync<PromiseRecord<T>>(stream, s_jsonOptions, ct)
 				.ConfigureAwait(false);
 		}
 		catch (FileNotFoundException)
@@ -123,11 +124,8 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	private string SafeFilePath(string id)
 	{
 		string path = Path.GetFullPath(Path.Combine(Directory, $"{id}.json"));
-		if (!path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-			&& path != Directory)
-		{
+		if (!path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal))
 			throw Error.InvalidId(id, nameof(id));
-		}
 		return path;
 	}
 
