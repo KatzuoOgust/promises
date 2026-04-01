@@ -1,6 +1,4 @@
-using KatzuoOgust.Promises;
 using KatzuoOgust.Promises.InMemory;
-using Xunit;
 
 namespace KatzuoOgust.Promises;
 
@@ -41,7 +39,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task CheckAsync_ReturnsLatestRecord_OnEachCall()
+	public async Task CheckAsync_ReturnsLatestRecord()
 	{
 		Promise<int> promise = await _store.CreateAsync();
 
@@ -92,7 +90,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitAsync_ResolvesBeforePolling_ReturnsResult()
+	public async Task WaitAsync_ReturnsPromise_WhenResolvedBeforePolling()
 	{
 		Promise<int> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, 99);
@@ -104,7 +102,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitAsync_ResolvesAfterDelay_ReturnsResult()
+	public async Task WaitAsync_ReturnsPromise_WhenResolvedAfterDelay()
 	{
 		Promise<int> promise = await _store.CreateAsync();
 
@@ -122,7 +120,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitAsync_FailsAfterDelay_ThrowsPromiseFailedException()
+	public async Task WaitAsync_ThrowsPromiseFailedException_WhenFailsAfterDelay()
 	{
 		Promise<int> promise = await _store.CreateAsync();
 
@@ -137,7 +135,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitAsync_Timeout_ThrowsTimeoutException()
+	public async Task WaitAsync_ThrowsTimeoutException_WhenTimeoutExpires()
 	{
 		Promise<int> promise = await _store.CreateAsync(); // stays pending
 
@@ -146,7 +144,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitAsync_CancellationRequested_ThrowsOperationCanceledException()
+	public async Task WaitAsync_ThrowsOperationCanceledException_WhenCancellationRequested()
 	{
 		Promise<int> promise = await _store.CreateAsync(); // stays pending
 		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
@@ -156,7 +154,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitForResultAsync_ResolvesAfterDelay_ReturnsResult()
+	public async Task WaitForResultAsync_ReturnsResult_WhenResolvedAfterDelay()
 	{
 		Promise<int> promise = await _store.CreateAsync();
 
@@ -172,7 +170,7 @@ public class PromiseTests
 	}
 
 	[Fact]
-	public async Task WaitForResultAsync_Timeout_ThrowsTimeoutException()
+	public async Task WaitForResultAsync_ThrowsTimeoutException_WhenTimeoutExpires()
 	{
 		Promise<int> promise = await _store.CreateAsync(); // stays pending
 

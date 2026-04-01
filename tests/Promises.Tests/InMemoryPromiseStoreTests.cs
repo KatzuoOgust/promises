@@ -1,6 +1,4 @@
-using KatzuoOgust.Promises;
 using KatzuoOgust.Promises.InMemory;
-using Xunit;
 
 namespace KatzuoOgust.Promises;
 
@@ -21,7 +19,7 @@ public class InMemoryPromiseStoreTests
 	}
 
 	[Fact]
-	public async Task Resolve_SetsResolvedStatusAndResult()
+	public async Task ResolveAsync_SetsResolvedStatusAndResult()
 	{
 		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "hello");
@@ -34,7 +32,7 @@ public class InMemoryPromiseStoreTests
 	}
 
 	[Fact]
-	public async Task Fail_SetsFailedStatusAndError()
+	public async Task FailAsync_SetsFailedStatusAndError()
 	{
 		Promise<string> promise = await _store.CreateAsync();
 		await _store.FailAsync(promise.Id, "boom");

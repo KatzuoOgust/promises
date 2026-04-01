@@ -1,6 +1,4 @@
-using KatzuoOgust.Promises;
 using KatzuoOgust.Promises.FileSystem;
-using Xunit;
 
 namespace KatzuoOgust.Promises;
 
@@ -18,27 +16,21 @@ public class FileSystemPromiseStoreTests : IDisposable
 	}
 
 	[Fact]
-	public async Task Create_WritesJsonFile()
+	public async Task Create_WritesJsonFileAndReturnsPendingPromise()
 	{
 		Promise<string> promise = await _store.CreateAsync();
 
 		string[] files = System.IO.Directory.GetFiles(_dir, "*.json");
 		Assert.Single(files);
 		Assert.Contains(promise.Id, files[0]);
-	}
 
-	[Fact]
-	public async Task Create_ReturnsPendingPromise()
-	{
-		Promise<string> promise = await _store.CreateAsync();
 		PromiseRecord<string> record = await promise.CheckAsync();
-
 		Assert.Equal(PromiseStatus.Pending, record.Status);
 		Assert.Null(record.Result);
 	}
 
 	[Fact]
-	public async Task Resolve_SetsResolvedStatusAndResult()
+	public async Task ResolveAsync_SetsResolvedStatusAndResult()
 	{
 		Promise<string> promise = await _store.CreateAsync();
 		await _store.ResolveAsync(promise.Id, "world");
@@ -50,7 +42,7 @@ public class FileSystemPromiseStoreTests : IDisposable
 	}
 
 	[Fact]
-	public async Task Fail_SetsFailedStatusAndError()
+	public async Task FailAsync_SetsFailedStatusAndError()
 	{
 		Promise<string> promise = await _store.CreateAsync();
 		await _store.FailAsync(promise.Id, "crash");
@@ -103,14 +95,14 @@ public class FileSystemPromiseStoreTests : IDisposable
 	}
 
 	[Fact]
-	public async Task GetAsync_PathTraversal_ThrowsArgumentException()
+	public async Task GetAsync_ThrowsArgumentException_WhenPathTraversal()
 	{
 		await Assert.ThrowsAsync<ArgumentException>(
 			() => _store.GetAsync("../../etc/passwd"));
 	}
 
 	[Fact]
-	public async Task ResolveAsync_PathTraversal_ThrowsArgumentException()
+	public async Task ResolveAsync_ThrowsArgumentException_WhenPathTraversal()
 	{
 		await Assert.ThrowsAsync<ArgumentException>(
 			() => _store.ResolveAsync("../../etc/passwd", "val"));

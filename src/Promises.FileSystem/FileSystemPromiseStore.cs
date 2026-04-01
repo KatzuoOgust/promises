@@ -91,7 +91,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		try
 		{
 			PromiseRecord<T> existing = await GetAsync(id, ct).ConfigureAwait(false)
-										?? throw Error.NotFound(id);
+				?? throw Error.NotFound(id);
 
 			if (existing.Status != PromiseStatus.Pending)
 				throw Error.AlreadySettled(id, existing.Status);
