@@ -7,10 +7,12 @@ namespace KatzuoOgust.Promises.InMemory;
 /// Thread-safe in-memory implementation of <see cref="IPromiseStore{T}"/>.
 /// Suitable for testing and single-process scenarios.
 /// </summary>
+/// <typeparam name="T">The type of results stored in promises.</typeparam>
 public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 {
 	private readonly ConcurrentDictionary<string, PromiseRecord<T>> _store = new();
 
+	/// <inheritdoc/>
 	public Task<Promise<T>> CreateAsync(CancellationToken ct = default)
 	{
 		string id = Guid.NewGuid().ToString("N");
@@ -19,6 +21,7 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 		return Task.FromResult(new Promise<T>(id, this));
 	}
 
+	/// <inheritdoc/>
 	public Task ResolveAsync(string id, T result, CancellationToken ct = default)
 	{
 		Update(id, r => r with
@@ -30,6 +33,7 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 		return Task.CompletedTask;
 	}
 
+	/// <inheritdoc/>
 	public Task FailAsync(string id, string errorMessage, CancellationToken ct = default)
 	{
 		Update(id, r => r with
@@ -41,6 +45,7 @@ public sealed class InMemoryPromiseStore<T> : IPromiseStore<T>
 		return Task.CompletedTask;
 	}
 
+	/// <inheritdoc/>
 	public Task<PromiseRecord<T>?> GetAsync(string id, CancellationToken ct = default)
 	{
 		_store.TryGetValue(id, out PromiseRecord<T>? record);

@@ -10,9 +10,10 @@ namespace KatzuoOgust.Promises.FileSystem;
 /// Concurrent access within the same process is serialised per-promise via
 /// <see cref="SemaphoreSlim"/>; cross-process safety relies on exclusive file locking.
 /// </summary>
+/// <typeparam name="T">The type of results stored in promises.</typeparam>
 public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 {
-	private static readonly JsonSerializerOptions JsonOptions = new()
+	private static readonly JsonSerializerOptions s_jsonOptions = new()
 	{
 		WriteIndented = false,
 		Converters = { new JsonStringEnumConverter() }
@@ -21,8 +22,14 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	// One semaphore per promise id keeps per-promise writes serialised without a global lock.
 	private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 
+	/// <summary>The directory where promise records are stored.</summary>
 	public string Directory { get; }
 
+	/// <summary>
+	/// Initializes a new file system promise store.
+	/// </summary>
+	/// <param name="directory">The directory to store promise files in. Will be created if it doesn't exist.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="directory"/> is null or whitespace.</exception>
 	public FileSystemPromiseStore(string directory)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(directory);
@@ -30,6 +37,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		System.IO.Directory.CreateDirectory(Directory);
 	}
 
+	/// <inheritdoc/>
 	public async Task<Promise<T>> CreateAsync(CancellationToken ct = default)
 	{
 		string id = Guid.NewGuid().ToString("N");
@@ -38,6 +46,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		return new Promise<T>(id, this);
 	}
 
+	/// <inheritdoc/>
 	public Task ResolveAsync(string id, T result, CancellationToken ct = default)
 		=> UpdateLockedAsync(id, r => r with
 		{
@@ -46,6 +55,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 			CompletedAt = DateTimeOffset.UtcNow
 		}, ct);
 
+	/// <inheritdoc/>
 	public Task FailAsync(string id, string errorMessage, CancellationToken ct = default)
 		=> UpdateLockedAsync(id, r => r with
 		{
@@ -54,6 +64,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 			CompletedAt = DateTimeOffset.UtcNow
 		}, ct);
 
+	/// <inheritdoc/>
 	public async Task<PromiseRecord<T>?> GetAsync(string id, CancellationToken ct = default)
 	{
 		string path = SafeFilePath(id);
@@ -63,7 +74,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 			// ensures readers see a complete file.
 			await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
 				bufferSize: 4096, useAsync: true);
-			return await JsonSerializer.DeserializeAsync<PromiseRecord<T>>(stream, JsonOptions, ct)
+			return await JsonSerializer.DeserializeAsync<PromiseRecord<T>>(stream, s_jsonOptions, ct)
 				.ConfigureAwait(false);
 		}
 		catch (FileNotFoundException)
@@ -80,7 +91,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		try
 		{
 			PromiseRecord<T> existing = await GetAsync(id, ct).ConfigureAwait(false)
-			                            ?? throw new PromiseNotFoundException(id);
+										?? throw new PromiseNotFoundException(id);
 
 			if (existing.Status != PromiseStatus.Pending)
 				throw new InvalidOperationException($"Promise '{id}' is already settled ({existing.Status}).");
@@ -99,13 +110,16 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		// FileShare.None prevents readers from opening a partially-written file.
 		await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None,
 			bufferSize: 4096, useAsync: true);
-		await JsonSerializer.SerializeAsync(stream, record, JsonOptions, ct).ConfigureAwait(false);
+		await JsonSerializer.SerializeAsync(stream, record, s_jsonOptions, ct).ConfigureAwait(false);
 	}
 
 	/// <summary>
 	/// Returns the resolved file path and guards against path-traversal attacks by
 	/// ensuring the result stays inside <see cref="Directory"/>.
 	/// </summary>
+	/// <param name="id">The promise ID (used to compute the file name).</param>
+	/// <returns>The full path to the promise file.</returns>
+	/// <exception cref="ArgumentException">Thrown when the <paramref name="id"/> resolves outside <see cref="Directory"/>.</exception>
 	private string SafeFilePath(string id)
 	{
 		string path = Path.GetFullPath(Path.Combine(Directory, $"{id}.json"));
@@ -117,4 +131,5 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		return path;
 	}
 }
+
 

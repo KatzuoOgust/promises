@@ -5,26 +5,39 @@ namespace KatzuoOgust.Promises;
 /// Each call to <see cref="CheckAsync"/> or <see cref="GetResultAsync"/> re-queries
 /// the store — no caching, no hidden polling.
 /// </summary>
+/// <typeparam name="T">The type of the promise's result.</typeparam>
 public sealed class Promise<T>
 {
-	public string Id { get; }
-	internal IPromiseStore<T> Store { get; }
+	private readonly IPromiseStore<T> _store;
 
+	/// <summary>The unique identifier for this promise.</summary>
+	public string Id { get; }
+
+	/// <summary>
+	/// Initializes a new promise handle.
+	/// </summary>
+	/// <param name="id">The unique identifier for the promise.</param>
+	/// <param name="store">The store that backs this promise.</param>
+	/// <exception cref="ArgumentException">Thrown when <paramref name="id"/> is null or whitespace.</exception>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is null.</exception>
 	public Promise(string id, IPromiseStore<T> store)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(id);
 		ArgumentNullException.ThrowIfNull(store);
 		Id = id;
-		Store = store;
+		_store = store;
 	}
 
 	/// <summary>
 	/// Re-queries the store and returns the current <see cref="PromiseRecord{T}"/>.
 	/// Throws <see cref="PromiseNotFoundException"/> if the id no longer exists.
 	/// </summary>
+	/// <param name="ct">Cancellation token.</param>
+	/// <returns>The current promise record.</returns>
+	/// <exception cref="PromiseNotFoundException">Thrown if the promise is not found in the store.</exception>
 	public async Task<PromiseRecord<T>> CheckAsync(CancellationToken ct = default)
 	{
-		PromiseRecord<T>? record = await Store.GetAsync(Id, ct).ConfigureAwait(false);
+		PromiseRecord<T>? record = await _store.GetAsync(Id, ct).ConfigureAwait(false);
 		return record ?? throw new PromiseNotFoundException(Id);
 	}
 
@@ -33,6 +46,11 @@ public sealed class Promise<T>
 	/// Throws <see cref="PromiseNotResolvedException"/> when still pending,
 	/// <see cref="PromiseFailedException"/> when failed.
 	/// </summary>
+	/// <param name="ct">Cancellation token.</param>
+	/// <returns>The resolved result.</returns>
+	/// <exception cref="PromiseNotResolvedException">Thrown when the promise is still pending.</exception>
+	/// <exception cref="PromiseFailedException">Thrown when the promise has failed.</exception>
+	/// <exception cref="PromiseNotFoundException">Thrown if the promise is not found in the store.</exception>
 	public async Task<T> GetResultAsync(CancellationToken ct = default)
 	{
 		PromiseRecord<T> record = await CheckAsync(ct).ConfigureAwait(false);
