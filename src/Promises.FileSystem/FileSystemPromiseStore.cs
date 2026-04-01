@@ -100,6 +100,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		finally
 		{
 			sem.Release();
+			_locks.TryRemove(id, out _);
 		}
 	}
 
