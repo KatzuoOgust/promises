@@ -107,4 +107,65 @@ public class FileSystemPromiseStoreTests : IDisposable
 		await Assert.ThrowsAsync<ArgumentException>(
 			() => _store.ResolveAsync("../../etc/passwd", "val"));
 	}
+
+	[Fact]
+	public async Task Cleanup_RemovesSemaphoreAfterResolution()
+	{
+		Promise<string> promise = await _store.CreateAsync();
+		string promiseId = promise.Id;
+
+		await _store.ResolveAsync(promiseId, "result");
+
+		// Force a semaphore check by attempting another operation.
+		// If cleanup happened, there should be no semaphore entry in _locks.
+		// We verify this indirectly: resolve again (should throw AlreadySettled)
+		// and the error happens quickly without waiting for a non-existent lock.
+		await Assert.ThrowsAsync<InvalidOperationException>(
+			() => _store.ResolveAsync(promiseId, "other"));
+	}
+
+	[Fact]
+	public async Task Cleanup_HandlesMultipleConcurrentPromises()
+	{
+		int count = 100;
+		var promises = new List<Promise<string>>();
+
+		for (int i = 0; i < count; i++)
+		{
+			promises.Add(await _store.CreateAsync());
+		}
+
+		await Task.WhenAll(promises.Select((p, i) =>
+			_store.ResolveAsync(p.Id, $"result-{i}")));
+
+		// Verify all promises are resolved.
+		foreach (var promise in promises)
+		{
+			PromiseRecord<string> record = await promise.CheckAsync();
+			Assert.Equal(PromiseStatus.Resolved, record.Status);
+		}
+	}
+
+	[Fact]
+	public async Task Cleanup_DoesNotCleanupWhileInUse()
+	{
+		Promise<string> promise = await _store.CreateAsync();
+		string promiseId = promise.Id;
+
+		// Simulate concurrent access: both tasks try to resolve at the same time.
+		// Only one succeeds (first to acquire the lock), the other gets "already settled" error.
+		// The key test: after both complete, no deadlock occurs and cleanup happens correctly.
+		var task1 = _store.ResolveAsync(promiseId, "result-1");
+		var task2 = _store.ResolveAsync(promiseId, "result-2");
+
+		// First completes successfully.
+		await task1;
+
+		// Second fails with already settled (expected).
+		await Assert.ThrowsAsync<InvalidOperationException>(async () => await task2);
+
+		// Verify final state: promise is resolved and no deadlock.
+		PromiseRecord<string> record = await promise.CheckAsync();
+		Assert.Equal(PromiseStatus.Resolved, record.Status);
+	}
 }

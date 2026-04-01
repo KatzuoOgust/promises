@@ -21,6 +21,10 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	// One semaphore per promise id keeps per-promise writes serialised without a global lock.
 	private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 
+	// Tracks usage count for each semaphore to enable cleanup of stale entries.
+	// Incremented when acquiring a semaphore, decremented when releasing.
+	private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _lockUsage = new();
+
 	/// <summary>The directory where promise records are stored.</summary>
 	public string Directory { get; }
 
@@ -86,7 +90,7 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	private async Task UpdateLockedAsync(string id, Func<PromiseRecord<T>, PromiseRecord<T>> updater,
 		CancellationToken ct)
 	{
-		SemaphoreSlim sem = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
+		SemaphoreSlim sem = GetSemaphore(id);
 		await sem.WaitAsync(ct).ConfigureAwait(false);
 		try
 		{
@@ -100,8 +104,36 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		}
 		finally
 		{
-			sem.Release();
+			ReleaseSemaphore(id, sem);
 		}
+	}
+
+	/// <summary>
+	/// Returns the semaphore for the given promise ID, creating it if necessary, and increments its usage count.
+	/// </summary>
+	private SemaphoreSlim GetSemaphore(string id)
+	{
+		SemaphoreSlim sem = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
+		_lockUsage.AddOrUpdate(id, 1, (_, count) => count + 1);
+		return sem;
+	}
+
+	/// <summary>
+	/// Releases the semaphore for the given promise ID and decrements its usage count. If the usage count reaches zero,
+	/// the semaphore is removed from the dictionary to prevent unbounded growth of stale entries.
+	/// </summary>
+	private void ReleaseSemaphore(string id, SemaphoreSlim sem)
+	{
+		sem.Release();
+		_lockUsage.AddOrUpdate(id, 0, (_, count) => Math.Max(0, count - 1));
+
+		if (!_lockUsage.TryGetValue(id, out int remainingUsages) || remainingUsages != 0)
+		{
+			return;
+		}
+
+		_locks.TryRemove(id, out _);
+		_lockUsage.TryRemove(id, out _);
 	}
 
 	private async Task WriteLockedAsync(string id, PromiseRecord<T> record, CancellationToken ct)
