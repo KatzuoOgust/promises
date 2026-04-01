@@ -101,7 +101,6 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 		finally
 		{
 			sem.Release();
-			_locks.TryRemove(id, out _);
 		}
 	}
 
@@ -124,9 +123,9 @@ public sealed class FileSystemPromiseStore<T> : IPromiseStore<T>
 	private string SafeFilePath(string id)
 	{
 		string path = Path.GetFullPath(Path.Combine(Directory, $"{id}.json"));
-		if (!path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-			throw Error.InvalidId(id, nameof(id));
-		return path;
+		return !path.StartsWith(Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+			? throw Error.InvalidId(id, nameof(id))
+			: path;
 	}
 
 	private static class Error
