@@ -56,6 +56,7 @@ public static class PromiseExtensions
 			TimeSpan? timeout = null,
 			CancellationToken ct = default)
 		{
+			ArgumentNullException.ThrowIfNull(promise);
 			Promise<T> settled = await promise.WaitAsync(timeout, ct).ConfigureAwait(false);
 			return await settled.GetResultAsync(ct).ConfigureAwait(false);
 		}
